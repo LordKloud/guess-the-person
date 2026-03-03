@@ -1,3 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500&display=swap');
+
+:root {
+  --bg: #13111A;
+  --surface: #1C1A24;
+  --surface2: #242130;
+  --ink: #F5F0E8;
+  --muted: #555;
+  --muted2: #444;
+  --border: #2A2730;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Outfit', sans-serif;
+}
+
 @import "tailwindcss";
 
 :root {
