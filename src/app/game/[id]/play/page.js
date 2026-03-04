@@ -35,6 +35,8 @@ function PlayContent() {
   const [loading, setLoading] = useState(true);
   const [hidden, setHidden] = useState(false);
   const [isHost, setIsHost] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [rows, setRows] = useState([{ name: "", identity: "" }]);
 
   useEffect(() => {
     loadData();
@@ -42,11 +44,11 @@ function PlayContent() {
       .channel("play-" + id)
       .on("postgres_changes", { event: "*", schema: "public", table: "assignments", filter: `game_id=eq.${id}` },
         () => loadData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "players", filter: `game_id=eq.${id}` },
+        () => loadData())
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "game", filter: `id=eq.${id}` },
         (payload) => {
-          if (payload.new.ended) {
-            router.push(`/game/${id}/winner?playerId=${myPlayerId}`);
-          }
+          if (payload.new.ended) router.push(`/game/${id}/winner?playerId=${myPlayerId}`);
         })
       .subscribe();
 
@@ -80,6 +82,40 @@ function PlayContent() {
     return players.find(p => p.id === assignment.assigner_id)?.name ?? null;
   }
 
+  function getMyAssigner() {
+    const assignment = assignments.find(a => a.assigned_to_id === myPlayerId);
+    if (!assignment) return null;
+    return players.find(p => p.id === assignment.assigner_id)?.name ?? null;
+  }
+
+  async function submitManualPlayers() {
+    const valid = rows.filter(r => r.name.trim() && r.identity.trim());
+    if (!valid.length) return;
+
+    const me = players.find(p => p.id === myPlayerId);
+
+    for (const row of valid) {
+      // Insert new player
+      const { data: newPlayer } = await supabase.from("players")
+        .insert([{ game_id: id, name: row.name.trim(), is_host: false }])
+        .select().single();
+
+      if (newPlayer) {
+        // Insert assignment — assigner is current user, assigned_to is new player
+        await supabase.from("assignments").insert([{
+          game_id: id,
+          assigner_id: myPlayerId,
+          assigned_to_id: newPlayer.id,
+          character_name: row.identity.trim()
+        }]);
+      }
+    }
+
+    setRows([{ name: "", identity: "" }]);
+    setShowAddForm(false);
+    loadData();
+  }
+
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#13111A", color: "#444" }}>
       Loading...
@@ -87,6 +123,7 @@ function PlayContent() {
   );
 
   const others = players.filter(p => p.id !== myPlayerId);
+  const myAssigner = getMyAssigner();
 
   return (
     <div style={{
@@ -159,15 +196,24 @@ function PlayContent() {
           })}
         </div>
 
+        {/* You are box */}
         <div style={{
-          background: "#1C1A24", borderRadius: 16, padding: "16px 22px",
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-          marginBottom: 16
+          background: "#1C1A24", borderRadius: 16, padding: "16px 18px",
+          marginBottom: 16, borderLeft: "4px solid #2A2730"
         }}>
-          <p style={{ fontSize: 13, color: "#444", fontStyle: "italic" }}>
-            You are <span style={{ color: "#333" }}>???</span>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <p style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#444" }}>
+              You are <span style={{ color: "#333" }}>???</span>
+            </p>
+            {myAssigner && (
+              <p style={{ fontSize: 11, color: "#333" }}>
+                by <span style={{ color: "#444" }}>{myAssigner}</span>
+              </p>
+            )}
+          </div>
+          <p style={{ fontSize: 13, color: "#333", letterSpacing: "0.1em" }}>
+            UNKNOWN
           </p>
-          <span style={{ fontSize: 13, color: "#333", letterSpacing: "0.1em" }}>UNKNOWN</span>
         </div>
 
         <div style={{ marginBottom: 24, textAlign: "center" }}>
@@ -177,20 +223,112 @@ function PlayContent() {
           </p>
         </div>
 
-        {/* End game — host only */}
-        {isHost && (
-          <button
-            onClick={() => router.push(`/game/${id}/end?playerId=${myPlayerId}`)}
-            style={{
-              width: "100%", padding: "13px",
-              background: "transparent", color: "#444",
-              border: "1px solid #2A2730", borderRadius: 12,
-              fontSize: 13, fontFamily: "'Outfit', sans-serif",
-              cursor: "pointer", letterSpacing: "0.06em"
-            }}
-          >
-            End Game →
-          </button>
+        {/* Add players manually */}
+        {!showAddForm ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <button
+              onClick={() => setShowAddForm(true)}
+              style={{
+                width: "100%", padding: "13px",
+                background: "transparent", color: "#444",
+                border: "1px dashed #2A2730", borderRadius: 12,
+                fontSize: 13, fontFamily: "'Outfit', sans-serif",
+                cursor: "pointer", letterSpacing: "0.06em"
+              }}
+            >
+              + Add players manually
+            </button>
+
+            {isHost && (
+              <button
+                onClick={() => router.push(`/game/${id}/end?playerId=${myPlayerId}`)}
+                style={{
+                  width: "100%", padding: "13px",
+                  background: "transparent", color: "#444",
+                  border: "1px solid #2A2730", borderRadius: 12,
+                  fontSize: 13, fontFamily: "'Outfit', sans-serif",
+                  cursor: "pointer", letterSpacing: "0.06em"
+                }}
+              >
+                End Game →
+              </button>
+            )}
+          </div>
+        ) : (
+          <div style={{
+            background: "#1C1A24", borderRadius: 16,
+            padding: "20px", border: "1px solid #2A2730",
+            display: "flex", flexDirection: "column", gap: 12
+          }}>
+            <p style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: "#555" }}>
+              Add Players
+            </p>
+
+            {rows.map((row, i) => (
+              <div key={i} style={{ display: "flex", gap: 8 }}>
+                <input
+                  value={row.name}
+                  onChange={e => { const u = [...rows]; u[i].name = e.target.value; setRows(u); }}
+                  placeholder="Name"
+                  style={{
+                    flex: 1, padding: "10px 12px", borderRadius: 10, fontSize: 13,
+                    border: "1px solid #2A2730", background: "#13111A",
+                    color: "#F5F0E8", fontFamily: "'Outfit', sans-serif", outline: "none"
+                  }}
+                />
+                <input
+                  value={row.identity}
+                  onChange={e => { const u = [...rows]; u[i].identity = e.target.value; setRows(u); }}
+                  placeholder="Secret Identity"
+                  style={{
+                    flex: 1, padding: "10px 12px", borderRadius: 10, fontSize: 13,
+                    border: "1px solid #2A2730", background: "#13111A",
+                    color: "#F5F0E8", fontFamily: "'Outfit', sans-serif", outline: "none"
+                  }}
+                />
+              </div>
+            ))}
+
+            <button
+              onClick={() => setRows([...rows, { name: "", identity: "" }])}
+              style={{
+                alignSelf: "flex-start", background: "none", border: "none",
+                color: "#444", fontSize: 12, cursor: "pointer",
+                fontFamily: "'Outfit', sans-serif",
+                display: "flex", alignItems: "center", gap: 6, padding: 0
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Add another
+            </button>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => { setShowAddForm(false); setRows([{ name: "", identity: "" }]); }}
+                style={{
+                  flex: 1, padding: "11px",
+                  background: "transparent", color: "#444",
+                  border: "1px solid #2A2730", borderRadius: 10,
+                  fontSize: 12, fontFamily: "'Outfit', sans-serif", cursor: "pointer"
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitManualPlayers}
+                style={{
+                  flex: 2, padding: "11px",
+                  background: "#F5F0E8", color: "#13111A",
+                  border: "none", borderRadius: 10,
+                  fontSize: 12, fontWeight: 500, fontFamily: "'Outfit', sans-serif", cursor: "pointer"
+                }}
+              >
+                Add to cheat sheet →
+              </button>
+            </div>
+          </div>
         )}
 
       </div>
