@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { QRCodeCanvas } from "qrcode.react";
 
 const COLORS = ["#E07B54","#5B8FE8","#4CAF72","#B06EC4","#E8B84B","#E85B7A"];
 
@@ -35,6 +36,8 @@ export default function GamePage() {
   const [copied, setCopied] = useState(false);
   const joinedRef = useRef(false);
   const myPlayerIdRef = useRef(null);
+
+  const gameUrl = `https://guess-the-person.vercel.app/game/${id}`;
 
   useEffect(() => {
     fetchPlayers();
@@ -107,6 +110,28 @@ export default function GamePage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  const QRBlock = () => (
+    <div style={{
+      background: "#1C1A24", borderRadius: 16, padding: "24px",
+      border: "1px solid #2A2730", display: "flex",
+      flexDirection: "column", alignItems: "center", gap: 12,
+    }}>
+      <p style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: "#555" }}>
+        Scan to join
+      </p>
+      <QRCodeCanvas
+        value={gameUrl}
+        size={160}
+        bgColor="#1C1A24"
+        fgColor="#F5F0E8"
+        level="M"
+      />
+      <p style={{ fontSize: 10, color: "#333", letterSpacing: "0.03em", textAlign: "center", wordBreak: "break-all" }}>
+        {gameUrl}
+      </p>
+    </div>
+  );
+
   return (
     <div style={{
       minHeight: "100vh", background: "var(--bg)",
@@ -158,6 +183,9 @@ export default function GamePage() {
               border: "none", borderRadius: 12, fontSize: 14, fontWeight: 500,
               letterSpacing: "0.08em", fontFamily: "'Outfit', sans-serif", cursor: "pointer"
             }}>JOIN GAME</button>
+
+            {/* QR below join button */}
+            <QRBlock />
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -217,6 +245,9 @@ export default function GamePage() {
                 Waiting for host to start...
               </p>
             )}
+
+            {/* QR below player list */}
+            <QRBlock />
           </div>
         )}
       </div>
