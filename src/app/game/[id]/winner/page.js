@@ -36,18 +36,12 @@ function WinnerContent() {
   async function playAgain() {
     if (playingAgain) return;
     setPlayingAgain(true);
-
-    // Create new game
     const newGameId = Math.random().toString(36).substring(2, 8);
     await supabase.from("game").insert([{ id: newGameId, started: false }]);
-
-    // Store new game ID in old game so all players can pick it up
     await supabase.from("game").update({ next_game_id: newGameId }).eq("id", id);
-
     router.push(`/game/${newGameId}`);
   }
 
-  // Listen for play again from host
   useEffect(() => {
     const channel = supabase
       .channel("winner-" + id)
@@ -88,12 +82,9 @@ function WinnerContent() {
           <p style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#555", marginBottom: 8 }}>
             Winner
           </p>
-          <h1 style={{ fontFamily: "Georgia, serif", fontSize: 40, color: "#F5F0E8", fontWeight: "normal", marginBottom: 8 }}>
+          <h1 style={{ fontFamily: "Georgia, serif", fontSize: 40, color: "#F5F0E8", fontWeight: "normal" }}>
             {winner?.name ?? "???"}
           </h1>
-          <p style={{ fontSize: 13, color: "#555" }}>
-            guessed they were <span style={{ color: "#F5F0E8" }}>{getIdentity(winnerId)}</span>
-          </p>
         </div>
 
         <p style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#444", marginBottom: 12, paddingLeft: 4 }}>
