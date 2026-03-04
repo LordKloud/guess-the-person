@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -28,28 +28,44 @@ function EyeClosed() {
 function PlayContent() {
   const { id } = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const myPlayerId = searchParams.get("playerId");
   const [players, setPlayers] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hidden, setHidden] = useState(false);
+  const [isHost, setIsHost] = useState(false);
 
   useEffect(() => {
     loadData();
     const channel = supabase
       .channel("play-" + id)
-      .on("postgres_changes", {
-        event: "*", schema: "public",
-        table: "assignments", filter: `game_id=eq.${id}`
-      }, () => loadData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "assignments", filter: `game_id=eq.${id}` },
+        () => loadData())
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "game", filter: `id=eq.${id}` },
+        (payload) => {
+          if (payload.new.ended) {
+            router.push(`/game/${id}/winner?playerId=${myPlayerId}`);
+          }
+        })
       .subscribe();
-    return () => supabase.removeChannel(channel);
+
+    const interval = setInterval(async () => {
+      const { data } = await supabase.from("game").select("ended").eq("id", id).single();
+      if (data?.ended) router.push(`/game/${id}/winner?playerId=${myPlayerId}`);
+    }, 2000);
+
+    return () => { supabase.removeChannel(channel); clearInterval(interval); };
   }, [id]);
 
   async function loadData() {
     const { data: p } = await supabase.from("players").select("*").eq("game_id", id);
     const { data: a } = await supabase.from("assignments").select("*").eq("game_id", id);
-    if (p) setPlayers(p);
+    if (p) {
+      setPlayers(p);
+      const me = p.find(pl => pl.id === myPlayerId);
+      if (me) setIsHost(me.is_host);
+    }
     if (a) setAssignments(a);
     setLoading(false);
   }
@@ -61,8 +77,7 @@ function PlayContent() {
   function getAssigner(playerId) {
     const assignment = assignments.find(a => a.assigned_to_id === playerId);
     if (!assignment) return null;
-    const assigner = players.find(p => p.id === assignment.assigner_id);
-    return assigner?.name ?? null;
+    return players.find(p => p.id === assignment.assigner_id)?.name ?? null;
   }
 
   if (loading) return (
@@ -89,17 +104,13 @@ function PlayContent() {
           <h1 style={{ fontFamily: "Georgia, serif", fontSize: 32, color: "#F5F0E8", fontWeight: "normal", marginBottom: 16 }}>
             Your Cheat Sheet
           </h1>
-
           <button
             onClick={() => setHidden(!hidden)}
             style={{
               display: "inline-flex", alignItems: "center", gap: 7,
-              padding: "8px 16px",
-              background: "#1C1A24", color: "#666",
-              border: "1px solid #2A2730",
-              borderRadius: 99, fontSize: 11,
-              fontFamily: "'Outfit', sans-serif",
-              letterSpacing: "0.1em", cursor: "pointer",
+              padding: "8px 16px", background: "#1C1A24", color: "#666",
+              border: "1px solid #2A2730", borderRadius: 99, fontSize: 11,
+              fontFamily: "'Outfit', sans-serif", letterSpacing: "0.1em", cursor: "pointer",
             }}
           >
             {hidden ? <EyeOpen /> : <EyeClosed />}
@@ -118,8 +129,7 @@ function PlayContent() {
             const pending = identity === "???";
             return (
               <div key={player.id} style={{
-                background: "#1C1A24", borderRadius: 16,
-                padding: "16px 18px",
+                background: "#1C1A24", borderRadius: 16, padding: "16px 18px",
                 borderLeft: `4px solid ${hidden || pending ? "#333" : COLORS[i % COLORS.length]}`
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
@@ -150,9 +160,9 @@ function PlayContent() {
         </div>
 
         <div style={{
-          background: "#1C1A24", borderRadius: 16,
-          padding: "16px 22px",
-          display: "flex", justifyContent: "space-between", alignItems: "center"
+          background: "#1C1A24", borderRadius: 16, padding: "16px 22px",
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          marginBottom: 16
         }}>
           <p style={{ fontSize: 13, color: "#444", fontStyle: "italic" }}>
             You are <span style={{ color: "#333" }}>???</span>
@@ -160,12 +170,28 @@ function PlayContent() {
           <span style={{ fontSize: 13, color: "#333", letterSpacing: "0.1em" }}>UNKNOWN</span>
         </div>
 
-        <div style={{ marginTop: 20, textAlign: "center" }}>
+        <div style={{ marginBottom: 24, textAlign: "center" }}>
           <p style={{ fontSize: 12, color: "#333", lineHeight: 1.7 }}>
             Answer questions out loud 🎤<br />
             First to guess their identity wins 🏆
           </p>
         </div>
+
+        {/* End game — host only */}
+        {isHost && (
+          <button
+            onClick={() => router.push(`/game/${id}/end?playerId=${myPlayerId}`)}
+            style={{
+              width: "100%", padding: "13px",
+              background: "transparent", color: "#444",
+              border: "1px solid #2A2730", borderRadius: 12,
+              fontSize: 13, fontFamily: "'Outfit', sans-serif",
+              cursor: "pointer", letterSpacing: "0.06em"
+            }}
+          >
+            End Game →
+          </button>
+        )}
 
       </div>
     </div>
@@ -174,11 +200,7 @@ function PlayContent() {
 
 export default function PlayPage() {
   return (
-    <Suspense fallback={
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#13111A" }}>
-        Loading...
-      </div>
-    }>
+    <Suspense fallback={<div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#13111A" }}>Loading...</div>}>
       <PlayContent />
     </Suspense>
   );
