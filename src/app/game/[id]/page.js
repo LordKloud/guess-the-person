@@ -26,7 +26,12 @@ function CheckIcon() {
 export default function GamePage() {
   const { id } = useParams();
   const router = useRouter();
-  const [name, setName] = useState("");
+  const [name, setName] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("playerName") || "";
+    }
+    return "";
+  });
   const [joined, setJoined] = useState(false);
   const [myPlayerId, setMyPlayerId] = useState(null);
   const [players, setPlayers] = useState([]);
@@ -80,6 +85,7 @@ export default function GamePage() {
       .select().single();
     if (error) { joinedRef.current = false; alert("Error: " + error.message); return; }
     localStorage.setItem("playerId-" + id, data.id);
+    localStorage.setItem("playerName", data.name);
     myPlayerIdRef.current = data.id;
     setMyPlayerId(data.id);
     setIsHost(data.is_host);
@@ -117,7 +123,6 @@ export default function GamePage() {
       <div style={{ width: "100%", maxWidth: 400 }}>
 
         <div style={{ textAlign: "center", marginBottom: 40 }}>
-          {/* Game ID with copy button */}
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <p style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--muted)" }}>
               Game · {id.toUpperCase()}
