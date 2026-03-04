@@ -28,7 +28,9 @@ export default function GamePage() {
   const router = useRouter();
   const [name, setName] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("playerName") || "";
+      return localStorage.getItem("playerName-" + id)
+          || localStorage.getItem("playerName-latest")
+          || "";
     }
     return "";
   });
@@ -85,7 +87,8 @@ export default function GamePage() {
       .select().single();
     if (error) { joinedRef.current = false; alert("Error: " + error.message); return; }
     localStorage.setItem("playerId-" + id, data.id);
-    localStorage.setItem("playerName", data.name);
+    localStorage.setItem("playerName-" + id, data.name);
+    localStorage.setItem("playerName-latest", data.name);
     myPlayerIdRef.current = data.id;
     setMyPlayerId(data.id);
     setIsHost(data.is_host);
