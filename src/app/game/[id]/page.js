@@ -6,6 +6,23 @@ import { supabase } from "@/lib/supabase";
 
 const COLORS = ["#E07B54","#5B8FE8","#4CAF72","#B06EC4","#E8B84B","#E85B7A"];
 
+function CopyIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4CAF72" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  );
+}
+
 export default function GamePage() {
   const { id } = useParams();
   const router = useRouter();
@@ -15,6 +32,7 @@ export default function GamePage() {
   const [players, setPlayers] = useState([]);
   const [isHost, setIsHost] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [copied, setCopied] = useState(false);
   const joinedRef = useRef(false);
   const myPlayerIdRef = useRef(null);
 
@@ -83,6 +101,12 @@ export default function GamePage() {
     router.push(`/game/${id}/assign?playerId=${myPlayerId}`);
   }
 
+  function copyCode() {
+    navigator.clipboard.writeText(id.toUpperCase());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   return (
     <div style={{
       minHeight: "100vh", background: "var(--bg)",
@@ -93,9 +117,23 @@ export default function GamePage() {
       <div style={{ width: "100%", maxWidth: 400 }}>
 
         <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <p style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 }}>
-            Game · {id.toUpperCase()}
-          </p>
+          {/* Game ID with copy button */}
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <p style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--muted)" }}>
+              Game · {id.toUpperCase()}
+            </p>
+            <button
+              onClick={copyCode}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                color: copied ? "#4CAF72" : "var(--muted)",
+                padding: 0, display: "flex", alignItems: "center",
+                transition: "color 0.2s ease"
+              }}
+            >
+              {copied ? <CheckIcon /> : <CopyIcon />}
+            </button>
+          </div>
           <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 36, fontWeight: 600, color: "var(--ink)" }}>
             {joined ? "Waiting Room" : "Join Game"}
           </h1>
