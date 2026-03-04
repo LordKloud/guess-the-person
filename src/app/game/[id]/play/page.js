@@ -40,6 +40,13 @@ function PlayContent() {
     return assignments.find(a => a.assigned_to_id === playerId)?.character_name ?? "???";
   }
 
+  function getAssigner(playerId) {
+    const assignment = assignments.find(a => a.assigned_to_id === playerId);
+    if (!assignment) return null;
+    const assigner = players.find(p => p.id === assignment.assigner_id);
+    return assigner?.name ?? null;
+  }
+
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#13111A", color: "#444" }}>
       Loading...
@@ -73,16 +80,24 @@ function PlayContent() {
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
           {others.map((player, i) => {
             const identity = getIdentity(player.id);
+            const assigner = getAssigner(player.id);
             const pending = identity === "???";
             return (
               <div key={player.id} style={{
                 background: "#1C1A24", borderRadius: 16,
-                padding: "18px 22px",
+                padding: "16px 18px",
                 borderLeft: `4px solid ${pending ? "#333" : COLORS[i % COLORS.length]}`
               }}>
-                <p style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "#555", marginBottom: 4 }}>
-                  {player.name}
-                </p>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <p style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#666" }}>
+                    {player.name}
+                  </p>
+                  {assigner && (
+                    <p style={{ fontSize: 11, color: "#444", letterSpacing: "0.05em" }}>
+                      by <span style={{ color: "#666" }}>{assigner}</span>
+                    </p>
+                  )}
+                </div>
                 <p style={{
                   fontFamily: "Georgia, serif", fontSize: 26,
                   color: pending ? "#333" : "#F5F0E8",
