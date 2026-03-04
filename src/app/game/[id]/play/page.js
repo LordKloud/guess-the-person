@@ -6,6 +6,25 @@ import { supabase } from "@/lib/supabase";
 
 const COLORS = ["#E07B54","#5B8FE8","#4CAF72","#B06EC4","#E8B84B","#E85B7A"];
 
+function EyeOpen() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  );
+}
+
+function EyeClosed() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+      <line x1="1" y1="1" x2="23" y2="23"/>
+    </svg>
+  );
+}
+
 function PlayContent() {
   const { id } = useParams();
   const searchParams = useSearchParams();
@@ -13,10 +32,10 @@ function PlayContent() {
   const [players, setPlayers] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
     loadData();
-
     const channel = supabase
       .channel("play-" + id)
       .on("postgres_changes", {
@@ -24,7 +43,6 @@ function PlayContent() {
         table: "assignments", filter: `game_id=eq.${id}`
       }, () => loadData())
       .subscribe();
-
     return () => supabase.removeChannel(channel);
   }, [id]);
 
@@ -68,9 +86,25 @@ function PlayContent() {
           <p style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "#444", marginBottom: 6 }}>
             Game is live
           </p>
-          <h1 style={{ fontFamily: "Georgia, serif", fontSize: 32, color: "#F5F0E8", fontWeight: "normal" }}>
+          <h1 style={{ fontFamily: "Georgia, serif", fontSize: 32, color: "#F5F0E8", fontWeight: "normal", marginBottom: 16 }}>
             Your Cheat Sheet
           </h1>
+
+          <button
+            onClick={() => setHidden(!hidden)}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 7,
+              padding: "8px 16px",
+              background: "#1C1A24", color: "#666",
+              border: "1px solid #2A2730",
+              borderRadius: 99, fontSize: 11,
+              fontFamily: "'Outfit', sans-serif",
+              letterSpacing: "0.1em", cursor: "pointer",
+            }}
+          >
+            {hidden ? <EyeOpen /> : <EyeClosed />}
+            {hidden ? "SHOW ANSWERS" : "HIDE ANSWERS"}
+          </button>
         </div>
 
         <p style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#444", marginBottom: 12, paddingLeft: 4 }}>
@@ -86,23 +120,27 @@ function PlayContent() {
               <div key={player.id} style={{
                 background: "#1C1A24", borderRadius: 16,
                 padding: "16px 18px",
-                borderLeft: `4px solid ${pending ? "#333" : COLORS[i % COLORS.length]}`
+                borderLeft: `4px solid ${hidden || pending ? "#333" : COLORS[i % COLORS.length]}`
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                   <p style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#666" }}>
                     {player.name}
                   </p>
                   {assigner && (
-                    <p style={{ fontSize: 11, color: "#444", letterSpacing: "0.05em" }}>
+                    <p style={{ fontSize: 11, color: "#444" }}>
                       by <span style={{ color: "#666" }}>{assigner}</span>
                     </p>
                   )}
                 </div>
                 <p style={{
                   fontFamily: "Georgia, serif", fontSize: 26,
-                  color: pending ? "#333" : "#F5F0E8",
+                  color: hidden ? "transparent" : pending ? "#333" : "#F5F0E8",
                   fontWeight: "normal", lineHeight: 1.2,
-                  fontStyle: pending ? "italic" : "normal"
+                  background: hidden ? "#2A2730" : "transparent",
+                  borderRadius: hidden ? 6 : 0,
+                  padding: hidden ? "2px 8px" : 0,
+                  userSelect: "none",
+                  fontStyle: (!hidden && pending) ? "italic" : "normal"
                 }}>
                   {identity}
                 </p>
