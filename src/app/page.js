@@ -64,6 +64,7 @@ export default function Home() {
       <div style={{ width: "100%", maxWidth: 400 }}>
 
         <div style={{ textAlign: "center", marginBottom: 48 }}>
+          <p style={{ fontSize: 40, marginBottom: 12 }}>🎭</p>
           <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 48, fontWeight: 600, color: "var(--ink)", marginBottom: 8 }}>
             Guess The Person
           </h1>
