@@ -6,6 +6,23 @@ import { supabase } from "@/lib/supabase";
 
 const COLORS = ["#E07B54","#5B8FE8","#4CAF72","#B06EC4","#E8B84B","#E85B7A"];
 
+function HomeButton() {
+  return (
+    <a href="https://guess-the-person.vercel.app/" style={{
+      position: "fixed", top: 16, left: 16, zIndex: 100,
+      display: "flex", alignItems: "center",
+      padding: "10px", background: "#1C1A24", color: "#555",
+      border: "1px solid #2A2730", borderRadius: 99,
+      textDecoration: "none", cursor: "pointer"
+    }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    </a>
+  );
+}
+
 function AssignContent() {
   const { id } = useParams();
   const searchParams = useSearchParams();
@@ -94,6 +111,7 @@ function AssignContent() {
       alignItems: "center", padding: "48px 24px",
       fontFamily: "'Outfit', sans-serif"
     }}>
+      <HomeButton />
       <div style={{ width: "100%", maxWidth: 400 }}>
 
         <div style={{ textAlign: "center", marginBottom: 40 }}>

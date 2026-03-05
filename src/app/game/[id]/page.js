@@ -7,6 +7,23 @@ import { QRCodeCanvas } from "qrcode.react";
 
 const COLORS = ["#E07B54","#5B8FE8","#4CAF72","#B06EC4","#E8B84B","#E85B7A"];
 
+function HomeButton() {
+  return (
+    <a href="https://guess-the-person.vercel.app/" style={{
+      position: "fixed", top: 16, left: 16, zIndex: 100,
+      display: "flex", alignItems: "center",
+      padding: "10px", background: "#1C1A24", color: "#555",
+      border: "1px solid #2A2730", borderRadius: 99,
+      textDecoration: "none", cursor: "pointer"
+    }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    </a>
+  );
+}
+
 function CopyIcon() {
   return (
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -119,13 +136,7 @@ export default function GamePage() {
       <p style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: "#555" }}>
         Scan to join
       </p>
-      <QRCodeCanvas
-        value={gameUrl}
-        size={160}
-        bgColor="#1C1A24"
-        fgColor="#F5F0E8"
-        level="M"
-      />
+      <QRCodeCanvas value={gameUrl} size={160} bgColor="#1C1A24" fgColor="#F5F0E8" level="M" />
       <p style={{ fontSize: 10, color: "#333", letterSpacing: "0.03em", textAlign: "center", wordBreak: "break-all" }}>
         {gameUrl}
       </p>
@@ -139,6 +150,7 @@ export default function GamePage() {
       alignItems: "center", padding: "48px 24px",
       fontFamily: "'Outfit', sans-serif"
     }}>
+      <HomeButton />
       <div style={{ width: "100%", maxWidth: 400 }}>
 
         <div style={{ textAlign: "center", marginBottom: 40 }}>
@@ -146,15 +158,11 @@ export default function GamePage() {
             <p style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--muted)" }}>
               Game · {id.toUpperCase()}
             </p>
-            <button
-              onClick={copyCode}
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                color: copied ? "#4CAF72" : "var(--muted)",
-                padding: 0, display: "flex", alignItems: "center",
-                transition: "color 0.2s ease"
-              }}
-            >
+            <button onClick={copyCode} style={{
+              background: "none", border: "none", cursor: "pointer",
+              color: copied ? "#4CAF72" : "var(--muted)",
+              padding: 0, display: "flex", alignItems: "center", transition: "color 0.2s ease"
+            }}>
               {copied ? <CheckIcon /> : <CopyIcon />}
             </button>
           </div>
@@ -166,16 +174,13 @@ export default function GamePage() {
         {!joined ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <input
-              value={name}
-              onChange={e => setName(e.target.value)}
+              value={name} onChange={e => setName(e.target.value)}
               onKeyDown={e => e.key === "Enter" && joinGame()}
               placeholder="Your name"
               style={{
                 padding: "14px 18px", borderRadius: 12, fontSize: 16,
-                border: "1px solid var(--border)",
-                background: "var(--surface)", color: "var(--ink)",
-                fontFamily: "'Outfit', sans-serif", outline: "none",
-                textAlign: "center"
+                border: "1px solid var(--border)", background: "var(--surface)", color: "var(--ink)",
+                fontFamily: "'Outfit', sans-serif", outline: "none", textAlign: "center"
               }}
             />
             <button onClick={joinGame} style={{
@@ -183,17 +188,11 @@ export default function GamePage() {
               border: "none", borderRadius: 12, fontSize: 14, fontWeight: 500,
               letterSpacing: "0.08em", fontFamily: "'Outfit', sans-serif", cursor: "pointer"
             }}>JOIN GAME</button>
-
-            {/* QR below join button */}
             <QRBlock />
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{
-              background: "var(--surface)", borderRadius: 12,
-              padding: "12px 16px", textAlign: "center",
-              border: "1px solid var(--border)"
-            }}>
+            <div style={{ background: "var(--surface)", borderRadius: 12, padding: "12px 16px", textAlign: "center", border: "1px solid var(--border)" }}>
               <p style={{ fontSize: 13, color: "var(--muted)", fontWeight: 500 }}>
                 ✓ Joined as <span style={{ color: "var(--ink)" }}>{name}</span>
               </p>
@@ -206,38 +205,26 @@ export default function GamePage() {
                 </p>
               </div>
               {players.map((p, i) => (
-                <div key={p.id} style={{
-                  display: "flex", alignItems: "center", gap: 12,
-                  padding: "14px 18px", borderBottom: "1px solid var(--border)"
-                }}>
+                <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderBottom: "1px solid var(--border)" }}>
                   <div style={{
-                    width: 34, height: 34, borderRadius: "50%",
-                    background: COLORS[i % COLORS.length],
+                    width: 34, height: 34, borderRadius: "50%", background: COLORS[i % COLORS.length],
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: 13, fontWeight: 600, color: "white", flexShrink: 0
                   }}>{p.name[0].toUpperCase()}</div>
                   <span style={{ fontSize: 15, color: "var(--ink)", flex: 1 }}>{p.name}</span>
-                  {p.is_host && (
-                    <span style={{ fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--muted)" }}>
-                      Host
-                    </span>
-                  )}
+                  {p.is_host && <span style={{ fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--muted)" }}>Host</span>}
                 </div>
               ))}
             </div>
 
             {isHost ? (
-              <button
-                onClick={startGame}
-                disabled={starting || players.length < 2}
-                style={{
-                  padding: "15px", background: "var(--ink)", color: "var(--bg)",
-                  border: "none", borderRadius: 12, fontSize: 14, fontWeight: 500,
-                  letterSpacing: "0.08em", fontFamily: "'Outfit', sans-serif",
-                  cursor: players.length < 2 ? "not-allowed" : "pointer",
-                  opacity: players.length < 2 ? 0.3 : 1
-                }}
-              >
+              <button onClick={startGame} disabled={starting || players.length < 2} style={{
+                padding: "15px", background: "var(--ink)", color: "var(--bg)",
+                border: "none", borderRadius: 12, fontSize: 14, fontWeight: 500,
+                letterSpacing: "0.08em", fontFamily: "'Outfit', sans-serif",
+                cursor: players.length < 2 ? "not-allowed" : "pointer",
+                opacity: players.length < 2 ? 0.3 : 1
+              }}>
                 {starting ? "Starting..." : "START GAME →"}
               </button>
             ) : (
@@ -245,8 +232,6 @@ export default function GamePage() {
                 Waiting for host to start...
               </p>
             )}
-
-            {/* QR below player list */}
             <QRBlock />
           </div>
         )}
