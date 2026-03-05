@@ -8,16 +8,16 @@ export default function Home() {
   const router = useRouter();
   const [joinCode, setJoinCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState("home");
+  const [hostName, setHostName] = useState("");
 
   async function handleJoin() {
     if (!joinCode.trim()) return;
     setLoading(true);
     const code = joinCode.trim().toLowerCase();
 
-    // Check localStorage for existing session
     const savedPlayerId = localStorage.getItem("playerId-" + code);
 
-    // Fetch game state
     const { data: game, error } = await supabase
       .from("game")
       .select("id, started, ended")
@@ -30,7 +30,6 @@ export default function Home() {
       return;
     }
 
-    // If we have a saved session, skip lobby and go straight to right screen
     if (savedPlayerId) {
       if (game.ended) {
         router.push(`/game/${code}/winner?playerId=${savedPlayerId}`);
@@ -42,16 +41,39 @@ export default function Home() {
       return;
     }
 
-    // No saved session — go to lobby as normal
     router.push(`/game/${code}`);
   }
 
   async function createGame() {
+    if (!hostName.trim() || loading) return;
     setLoading(true);
+
     const newGameId = Math.random().toString(36).substring(2, 8);
-    const { error } = await supabase.from("game").insert([{ id: newGameId, started: false }]);
-    if (error) { alert("Error creating game: " + error.message); setLoading(false); return; }
-    router.push(`/game/${newGameId}`);
+
+    const { error: gameError } = await supabase
+      .from("game")
+      .insert([{ id: newGameId, started: false }]);
+
+    if (gameError) {
+      alert("Error creating game: " + gameError.message);
+      setLoading(false);
+      return;
+    }
+
+    const { data: player, error: playerError } = await supabase
+      .from("players")
+      .insert([{ game_id: newGameId, name: hostName.trim(), is_host: true }])
+      .select()
+      .single();
+
+    if (playerError) {
+      alert("Error joining game: " + playerError.message);
+      setLoading(false);
+      return;
+    }
+
+    localStorage.setItem("playerId-" + newGameId, player.id);
+    router.push(`/game/${newGameId}?playerId=${player.id}`);
   }
 
   return (
@@ -69,58 +91,106 @@ export default function Home() {
             Guess The Person
           </h1>
           <p style={{ fontSize: 13, color: "var(--muted)", fontStyle: "italic" }}>
-            A party game of secret identities
+            A game of secret identities
           </p>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
-          <input
-            value={joinCode}
-            onChange={e => setJoinCode(e.target.value.toLowerCase())}
-            onKeyDown={e => e.key === "Enter" && handleJoin()}
-            placeholder="Enter game code"
-            style={{
-              padding: "14px 18px", borderRadius: 12, fontSize: 16,
-              border: "1px solid var(--border)",
-              background: "var(--surface)", color: "var(--ink)",
-              fontFamily: "'Outfit', sans-serif", outline: "none",
-              textAlign: "center", letterSpacing: "0.1em"
-            }}
-          />
-          <button
-            onClick={handleJoin}
-            disabled={loading || !joinCode.trim()}
-            style={{
-              padding: "15px", background: "var(--ink)", color: "var(--bg)",
-              border: "none", borderRadius: 12, fontSize: 14, fontWeight: 500,
-              letterSpacing: "0.08em", fontFamily: "'Outfit', sans-serif",
-              cursor: joinCode.trim() ? "pointer" : "not-allowed",
-              opacity: joinCode.trim() ? 1 : 0.3
-            }}
-          >
-            {loading ? "Loading..." : "JOIN GAME"}
-          </button>
-        </div>
+        {step === "home" && (
+          <>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+              <input
+                value={joinCode}
+                onChange={e => setJoinCode(e.target.value.toLowerCase())}
+                onKeyDown={e => e.key === "Enter" && handleJoin()}
+                placeholder="Enter game code"
+                style={{
+                  padding: "14px 18px", borderRadius: 12, fontSize: 16,
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)", color: "var(--ink)",
+                  fontFamily: "'Outfit', sans-serif", outline: "none",
+                  textAlign: "center", letterSpacing: "0.1em"
+                }}
+              />
+              <button
+                onClick={handleJoin}
+                disabled={loading || !joinCode.trim()}
+                style={{
+                  padding: "15px", background: "var(--ink)", color: "var(--bg)",
+                  border: "none", borderRadius: 12, fontSize: 14, fontWeight: 500,
+                  letterSpacing: "0.08em", fontFamily: "'Outfit', sans-serif",
+                  cursor: joinCode.trim() ? "pointer" : "not-allowed",
+                  opacity: joinCode.trim() ? 1 : 0.3
+                }}
+              >
+                {loading ? "Loading..." : "JOIN GAME"}
+              </button>
+            </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32 }}>
-          <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
-          <span style={{ fontSize: 11, color: "var(--muted)", letterSpacing: "0.1em" }}>OR</span>
-          <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
-        </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+              <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+              <span style={{ fontSize: 11, color: "var(--muted)", letterSpacing: "0.1em" }}>OR</span>
+              <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+            </div>
 
-        <button
-          onClick={createGame}
-          disabled={loading}
-          style={{
-            width: "100%", padding: "15px",
-            background: "transparent", color: "var(--muted)",
-            border: "1px solid var(--border)", borderRadius: 12,
-            fontSize: 14, letterSpacing: "0.08em",
-            fontFamily: "'Outfit', sans-serif", cursor: "pointer"
-          }}
-        >
-          Create New Game
-        </button>
+            <button
+              onClick={() => setStep("creating")}
+              style={{
+                width: "100%", padding: "15px",
+                background: "transparent", color: "var(--muted)",
+                border: "1px solid var(--border)", borderRadius: 12,
+                fontSize: 14, letterSpacing: "0.08em",
+                fontFamily: "'Outfit', sans-serif", cursor: "pointer"
+              }}
+            >
+              Create New Game →
+            </button>
+          </>
+        )}
+
+        {step === "creating" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <input
+              value={hostName}
+              onChange={e => setHostName(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && createGame()}
+              placeholder="Your name"
+              autoFocus
+              style={{
+                padding: "14px 18px", borderRadius: 12, fontSize: 16,
+                border: "1px solid var(--border)",
+                background: "var(--surface)", color: "var(--ink)",
+                fontFamily: "'Outfit', sans-serif", outline: "none",
+                textAlign: "center"
+              }}
+            />
+            <button
+              onClick={createGame}
+              disabled={loading || !hostName.trim()}
+              style={{
+                padding: "15px",
+                background: hostName.trim() ? "var(--ink)" : "var(--surface)",
+                color: hostName.trim() ? "var(--bg)" : "#333",
+                border: "1px solid var(--border)", borderRadius: 12,
+                fontSize: 14, fontWeight: 500, letterSpacing: "0.08em",
+                fontFamily: "'Outfit', sans-serif",
+                cursor: hostName.trim() ? "pointer" : "not-allowed",
+              }}
+            >
+              {loading ? "Creating..." : "CREATE & HOST →"}
+            </button>
+
+            <button
+              onClick={() => { setStep("home"); setHostName(""); }}
+              style={{
+                padding: "10px", background: "transparent", color: "var(--muted)",
+                border: "none", fontSize: 12,
+                fontFamily: "'Outfit', sans-serif", cursor: "pointer"
+              }}
+            >
+              ← back
+            </button>
+          </div>
+        )}
 
       </div>
     </div>

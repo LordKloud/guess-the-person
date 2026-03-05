@@ -91,20 +91,18 @@ export default function GamePage() {
   }
 
   async function joinGame() {
-    if (!name.trim() || joinedRef.current) return;
-    joinedRef.current = true;
-    const { data: existing } = await supabase.from("players").select("id").eq("game_id", id);
-    const isFirst = !existing || existing.length === 0;
-    const { data, error } = await supabase.from("players")
-      .insert([{ game_id: id, name: name.trim(), is_host: isFirst }])
-      .select().single();
-    if (error) { joinedRef.current = false; alert("Error: " + error.message); return; }
-    localStorage.setItem("playerId-" + id, data.id);
-    myPlayerIdRef.current = data.id;
-    setMyPlayerId(data.id);
-    setIsHost(data.is_host);
-    setJoined(true);
-  }
+  if (!name.trim() || joinedRef.current) return;
+  joinedRef.current = true;
+  const { data, error } = await supabase.from("players")
+    .insert([{ game_id: id, name: name.trim(), is_host: false }])
+    .select().single();
+  if (error) { joinedRef.current = false; alert("Error: " + error.message); return; }
+  localStorage.setItem("playerId-" + id, data.id);
+  myPlayerIdRef.current = data.id;
+  setMyPlayerId(data.id);
+  setIsHost(data.is_host);
+  setJoined(true);
+}
 
   async function startGame() {
     if (players.length < 2) { alert("Need at least 2 players!"); return; }
