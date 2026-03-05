@@ -80,10 +80,23 @@ function WinnerContent() {
       <HomeButton />
       <div style={{ width: "100%", maxWidth: 400 }}>
 
+        {/* Winner / No winner card */}
         <div style={{ textAlign: "center", marginBottom: 32, background: "#1C1A24", borderRadius: 20, padding: "32px 24px", border: "1px solid #2A2730" }}>
-          <p style={{ fontSize: 32, marginBottom: 12 }}>🏆</p>
-          <p style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#555", marginBottom: 8 }}>Winner</p>
-          <h1 style={{ fontFamily: "Georgia, serif", fontSize: 40, color: "#F5F0E8", fontWeight: "normal" }}>{winner?.name ?? "???"}</h1>
+          {!winnerId ? (
+            <>
+              <p style={{ fontSize: 40, marginBottom: 12 }}>&#127917;</p>
+              <p style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#555", marginBottom: 12 }}>No Winner</p>
+              <p style={{ fontSize: 13, color: "#444", fontStyle: "italic", lineHeight: 1.7 }}>
+                "Though no one won this round, remember — until death, all defeat is psychological."
+              </p>
+            </>
+          ) : (
+            <>
+              <p style={{ fontSize: 32, marginBottom: 12 }}>🏆</p>
+              <p style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#555", marginBottom: 8 }}>Winner</p>
+              <h1 style={{ fontFamily: "Georgia, serif", fontSize: 40, color: "#F5F0E8", fontWeight: "normal" }}>{winner?.name ?? "???"}</h1>
+            </>
+          )}
         </div>
 
         <p style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#444", marginBottom: 12, paddingLeft: 4 }}>Everyone's identity</p>

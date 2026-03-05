@@ -46,6 +46,11 @@ function EndContent() {
     router.push(`/game/${id}/winner?playerId=${myPlayerId}`);
   }
 
+  async function noWinner() {
+    await supabase.from("game").update({ ended: true, winner_id: null }).eq("id", id);
+    router.push(`/game/${id}/winner?playerId=${myPlayerId}`);
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: "#13111A", display: "flex", flexDirection: "column", alignItems: "center", padding: "48px 24px", fontFamily: "'Outfit', sans-serif" }}>
       <HomeButton />
@@ -56,7 +61,7 @@ function EndContent() {
           <p style={{ fontSize: 13, color: "#555" }}>Select the player who guessed their identity first</p>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
           {players.map((p, i) => {
             const isSelected = selected === p.id;
             return (
@@ -68,6 +73,17 @@ function EndContent() {
             );
           })}
         </div>
+
+        {/* No winner button — below players, above warning */}
+        <button onClick={noWinner} style={{
+          width: "100%", padding: "13px", marginBottom: 16,
+          background: "transparent", color: "#444",
+          border: "1px dashed #2A2730", borderRadius: 12,
+          fontSize: 13, fontFamily: "'Outfit', sans-serif",
+          cursor: "pointer", letterSpacing: "0.06em"
+        }}>
+          No winner this time →
+        </button>
 
         <div style={{ background: "#1C1A24", borderRadius: 12, padding: "12px 16px", marginBottom: 12, border: "1px solid #2A2730", display: "flex", alignItems: "flex-start", gap: 10 }}>
           <span style={{ fontSize: 14, marginTop: 1 }}>⚠️</span>
