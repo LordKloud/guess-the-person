@@ -162,7 +162,18 @@ function PlayContent() {
             return (
               <div key={player.id} style={{ background: "#1C1A24", borderRadius: 16, padding: "16px 18px", borderLeft: `4px solid ${hidden || pending ? "#333" : COLORS[i % COLORS.length]}` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <p style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#666" }}>{player.name}</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <p style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#666" }}>{player.name}</p>
+                    {player.is_host && (
+                      <span style={{
+                        fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase",
+                        color: "#444", border: "1px solid #2A2730",
+                        borderRadius: 99, padding: "2px 7px"
+                      }}>
+                        host
+                      </span>
+                    )}
+                  </div>
                   {assigner && <p style={{ fontSize: 11, color: "#444" }}>by <span style={{ color: "#666" }}>{assigner}</span></p>}
                 </div>
                 <p style={{ fontFamily: "Georgia, serif", fontSize: 26, color: hidden ? "transparent" : pending ? "#333" : "#F5F0E8", fontWeight: "normal", lineHeight: 1.2, background: hidden ? "#2A2730" : "transparent", borderRadius: hidden ? 6 : 0, padding: hidden ? "2px 8px" : 0, userSelect: "none", fontStyle: (!hidden && pending) ? "italic" : "normal" }}>
