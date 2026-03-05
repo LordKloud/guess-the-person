@@ -9,7 +9,7 @@ const COLORS = ["#E07B54","#5B8FE8","#4CAF72","#B06EC4","#E8B84B","#E85B7A"];
 
 function HomeButton() {
   return (
-    <a href="https://guess-the-person.vercel.app/" style={{
+    <a href="https://mystery-me.vercel.app/" style={{
       position: "fixed", top: 16, left: 16, zIndex: 100,
       display: "flex", alignItems: "center",
       padding: "10px", background: "#1C1A24", color: "#555",
@@ -55,7 +55,7 @@ export default function GamePage() {
   const joinedRef = useRef(false);
   const myPlayerIdRef = useRef(null);
 
-  const gameUrl = `https://guess-the-person.vercel.app/game/${id}`;
+  const gameUrl = `https://mystery-me.vercel.app/game/${id}`;
 
   // On mount: check if already joined via URL or localStorage
   useEffect(() => {
