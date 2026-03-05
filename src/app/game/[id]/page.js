@@ -45,6 +45,7 @@ export default function GamePage() {
   const { id } = useParams();
   const router = useRouter();
   const [name, setName] = useState("");
+  const [nameError, setNameError] = useState("");
   const [joined, setJoined] = useState(false);
   const [myPlayerId, setMyPlayerId] = useState(null);
   const [players, setPlayers] = useState([]);
@@ -74,6 +75,19 @@ export default function GamePage() {
   }, [id]);
 
   useEffect(() => {
+    // Check if already joined via playerId in URL or localStorage
+    const params = new URLSearchParams(window.location.search);
+    const pid = params.get("playerId") || localStorage.getItem("playerId-" + id);
+    if (pid) {
+      myPlayerIdRef.current = pid;
+      setMyPlayerId(pid);
+      fetchPlayers().then(() => {
+        setJoined(true);
+      });
+    }
+  }, []);
+
+  useEffect(() => {
     if (!joined) return;
     const interval = setInterval(async () => {
       const { data } = await supabase.from("game").select("started").eq("id", id).single();
@@ -91,18 +105,28 @@ export default function GamePage() {
   }
 
   async function joinGame() {
-  if (!name.trim() || joinedRef.current) return;
-  joinedRef.current = true;
-  const { data, error } = await supabase.from("players")
-    .insert([{ game_id: id, name: name.trim(), is_host: false }])
-    .select().single();
-  if (error) { joinedRef.current = false; alert("Error: " + error.message); return; }
-  localStorage.setItem("playerId-" + id, data.id);
-  myPlayerIdRef.current = data.id;
-  setMyPlayerId(data.id);
-  setIsHost(data.is_host);
-  setJoined(true);
-}
+    if (!name.trim() || joinedRef.current) return;
+    setNameError("");
+
+    // Check for duplicate name (case-insensitive)
+    const { data: existing } = await supabase.from("players").select("name").eq("game_id", id);
+    const isDuplicate = existing?.some(p => p.name.toLowerCase() === name.trim().toLowerCase());
+    if (isDuplicate) {
+      setNameError("This name is already taken, try another!");
+      return;
+    }
+
+    joinedRef.current = true;
+    const { data, error } = await supabase.from("players")
+      .insert([{ game_id: id, name: name.trim(), is_host: false }])
+      .select().single();
+    if (error) { joinedRef.current = false; alert("Error: " + error.message); return; }
+    localStorage.setItem("playerId-" + id, data.id);
+    myPlayerIdRef.current = data.id;
+    setMyPlayerId(data.id);
+    setIsHost(data.is_host);
+    setJoined(true);
+  }
 
   async function startGame() {
     if (players.length < 2) { alert("Need at least 2 players!"); return; }
@@ -172,15 +196,22 @@ export default function GamePage() {
         {!joined ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <input
-              value={name} onChange={e => setName(e.target.value)}
+              value={name}
+              onChange={e => { setName(e.target.value); setNameError(""); }}
               onKeyDown={e => e.key === "Enter" && joinGame()}
               placeholder="Your name"
               style={{
                 padding: "14px 18px", borderRadius: 12, fontSize: 16,
-                border: "1px solid var(--border)", background: "var(--surface)", color: "var(--ink)",
+                border: `1px solid ${nameError ? "#E85B7A" : "var(--border)"}`,
+                background: "var(--surface)", color: "var(--ink)",
                 fontFamily: "'Outfit', sans-serif", outline: "none", textAlign: "center"
               }}
             />
+            {nameError && (
+              <p style={{ fontSize: 12, color: "#E85B7A", textAlign: "center", marginTop: -4 }}>
+                {nameError}
+              </p>
+            )}
             <button onClick={joinGame} style={{
               padding: "15px", background: "var(--ink)", color: "var(--bg)",
               border: "none", borderRadius: 12, fontSize: 14, fontWeight: 500,
@@ -192,7 +223,7 @@ export default function GamePage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ background: "var(--surface)", borderRadius: 12, padding: "12px 16px", textAlign: "center", border: "1px solid var(--border)" }}>
               <p style={{ fontSize: 13, color: "var(--muted)", fontWeight: 500 }}>
-                ✓ Joined as <span style={{ color: "var(--ink)" }}>{name}</span>
+                ✓ Joined as <span style={{ color: "var(--ink)" }}>{players.find(p => p.id === myPlayerId)?.name ?? name}</span>
               </p>
             </div>
 

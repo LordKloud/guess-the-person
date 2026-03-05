@@ -10,6 +10,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState("home");
   const [hostName, setHostName] = useState("");
+  const [hostNameError, setHostNameError] = useState("");
 
   async function handleJoin() {
     if (!joinCode.trim()) return;
@@ -46,6 +47,7 @@ export default function Home() {
 
   async function createGame() {
     if (!hostName.trim() || loading) return;
+    setHostNameError("");
     setLoading(true);
 
     const newGameId = Math.random().toString(36).substring(2, 8);
@@ -151,18 +153,23 @@ export default function Home() {
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <input
               value={hostName}
-              onChange={e => setHostName(e.target.value)}
+              onChange={e => { setHostName(e.target.value); setHostNameError(""); }}
               onKeyDown={e => e.key === "Enter" && createGame()}
               placeholder="Your name"
               autoFocus
               style={{
                 padding: "14px 18px", borderRadius: 12, fontSize: 16,
-                border: "1px solid var(--border)",
+                border: `1px solid ${hostNameError ? "#E85B7A" : "var(--border)"}`,
                 background: "var(--surface)", color: "var(--ink)",
                 fontFamily: "'Outfit', sans-serif", outline: "none",
                 textAlign: "center"
               }}
             />
+            {hostNameError && (
+              <p style={{ fontSize: 12, color: "#E85B7A", textAlign: "center", marginTop: -4 }}>
+                {hostNameError}
+              </p>
+            )}
             <button
               onClick={createGame}
               disabled={loading || !hostName.trim()}
@@ -180,7 +187,7 @@ export default function Home() {
             </button>
 
             <button
-              onClick={() => { setStep("home"); setHostName(""); }}
+              onClick={() => { setStep("home"); setHostName(""); setHostNameError(""); }}
               style={{
                 padding: "10px", background: "transparent", color: "var(--muted)",
                 border: "none", fontSize: 12,
