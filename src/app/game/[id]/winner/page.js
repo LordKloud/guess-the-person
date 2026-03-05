@@ -33,6 +33,12 @@ function WinnerContent() {
     return assignments.find(a => a.assigned_to_id === playerId)?.character_name ?? "???";
   }
 
+  function getAssigner(playerId) {
+    const assignment = assignments.find(a => a.assigned_to_id === playerId);
+    if (!assignment) return null;
+    return players.find(p => p.id === assignment.assigner_id)?.name ?? null;
+  }
+
   async function playAgain() {
     if (playingAgain) return;
     setPlayingAgain(true);
@@ -47,9 +53,7 @@ function WinnerContent() {
       .channel("winner-" + id)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "game", filter: `id=eq.${id}` },
         (payload) => {
-          if (payload.new.next_game_id) {
-            router.push(`/game/${payload.new.next_game_id}`);
-          }
+          if (payload.new.next_game_id) router.push(`/game/${payload.new.next_game_id}`);
         })
       .subscribe();
     return () => supabase.removeChannel(channel);
@@ -92,19 +96,29 @@ function WinnerContent() {
         </p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
-          {players.map((p, i) => (
-            <div key={p.id} style={{
-              background: "#1C1A24", borderRadius: 16, padding: "16px 18px",
-              borderLeft: `4px solid ${COLORS[i % COLORS.length]}`
-            }}>
-              <p style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "#555", marginBottom: 4 }}>
-                {p.name} {p.id === winnerId ? "🏆" : ""}
-              </p>
-              <p style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#F5F0E8", fontWeight: "normal" }}>
-                {getIdentity(p.id)}
-              </p>
-            </div>
-          ))}
+          {players.map((p, i) => {
+            const assigner = getAssigner(p.id);
+            return (
+              <div key={p.id} style={{
+                background: "#1C1A24", borderRadius: 16, padding: "16px 18px",
+                borderLeft: `4px solid ${COLORS[i % COLORS.length]}`
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <p style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "#555" }}>
+                    {p.name} {p.id === winnerId ? "🏆" : ""}
+                  </p>
+                  {assigner && (
+                    <p style={{ fontSize: 11, color: "#444" }}>
+                      by <span style={{ color: "#666" }}>{assigner}</span>
+                    </p>
+                  )}
+                </div>
+                <p style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#F5F0E8", fontWeight: "normal" }}>
+                  {getIdentity(p.id)}
+                </p>
+              </div>
+            );
+          })}
         </div>
 
         <button
