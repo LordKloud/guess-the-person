@@ -57,6 +57,21 @@ export default function GamePage() {
 
   const gameUrl = `https://guess-the-person.vercel.app/game/${id}`;
 
+  // On mount: check if already joined via URL or localStorage
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const pid = params.get("playerId") || localStorage.getItem("playerId-" + id);
+    if (pid) {
+      myPlayerIdRef.current = pid;
+      setMyPlayerId(pid);
+      supabase.from("players").select("*").eq("id", pid).single().then(({ data }) => {
+        if (data) setIsHost(data.is_host);
+      });
+      setJoined(true);
+    }
+  }, []);
+
+  // Realtime + game started listener
   useEffect(() => {
     fetchPlayers();
     const channel = supabase
@@ -74,19 +89,7 @@ export default function GamePage() {
     return () => supabase.removeChannel(channel);
   }, [id]);
 
-  useEffect(() => {
-    // Check if already joined via playerId in URL or localStorage
-    const params = new URLSearchParams(window.location.search);
-    const pid = params.get("playerId") || localStorage.getItem("playerId-" + id);
-    if (pid) {
-      myPlayerIdRef.current = pid;
-      setMyPlayerId(pid);
-      fetchPlayers().then(() => {
-        setJoined(true);
-      });
-    }
-  }, []);
-
+  // Polling fallback for game started
   useEffect(() => {
     if (!joined) return;
     const interval = setInterval(async () => {
