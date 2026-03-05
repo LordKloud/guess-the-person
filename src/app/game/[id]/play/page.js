@@ -25,6 +25,23 @@ function EyeClosed() {
   );
 }
 
+function CopyIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4CAF72" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  );
+}
+
 function PlayContent() {
   const { id } = useParams();
   const searchParams = useSearchParams();
@@ -37,6 +54,7 @@ function PlayContent() {
   const [isHost, setIsHost] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [rows, setRows] = useState([{ name: "", identity: "" }]);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -88,29 +106,26 @@ function PlayContent() {
     return players.find(p => p.id === assignment.assigner_id)?.name ?? null;
   }
 
+  function copyCode() {
+    navigator.clipboard.writeText(id.toUpperCase());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   async function submitManualPlayers() {
     const valid = rows.filter(r => r.name.trim() && r.identity.trim());
     if (!valid.length) return;
-
-    const me = players.find(p => p.id === myPlayerId);
-
     for (const row of valid) {
-      // Insert new player
       const { data: newPlayer } = await supabase.from("players")
         .insert([{ game_id: id, name: row.name.trim(), is_host: false }])
         .select().single();
-
       if (newPlayer) {
-        // Insert assignment — assigner is current user, assigned_to is new player
         await supabase.from("assignments").insert([{
-          game_id: id,
-          assigner_id: myPlayerId,
-          assigned_to_id: newPlayer.id,
-          character_name: row.identity.trim()
+          game_id: id, assigner_id: myPlayerId,
+          assigned_to_id: newPlayer.id, character_name: row.identity.trim()
         }]);
       }
     }
-
     setRows([{ name: "", identity: "" }]);
     setShowAddForm(false);
     loadData();
@@ -135,10 +150,22 @@ function PlayContent() {
       <div style={{ width: "100%", maxWidth: 400 }}>
 
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <p style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "#444", marginBottom: 6 }}>
-            Game is live
-          </p>
-          <h1 style={{ fontFamily: "Georgia, serif", fontSize: 32, color: "#F5F0E8", fontWeight: "normal", marginBottom: 16 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <p style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#444" }}>
+              Game · {id.toUpperCase()}
+            </p>
+            <button
+              onClick={copyCode}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                color: copied ? "#4CAF72" : "#444",
+                padding: 0, display: "flex", alignItems: "center"
+              }}
+            >
+              {copied ? <CheckIcon /> : <CopyIcon />}
+            </button>
+          </div>
+          <h1 style={{ fontFamily: "Georgia, serif", fontSize: 32, color: "#F5F0E8", fontWeight: "normal", marginBottom: 16, display: "block" }}>
             Your Cheat Sheet
           </h1>
           <button
@@ -211,9 +238,7 @@ function PlayContent() {
               </p>
             )}
           </div>
-          <p style={{ fontSize: 13, color: "#333", letterSpacing: "0.1em" }}>
-            UNKNOWN
-          </p>
+          <p style={{ fontSize: 13, color: "#333", letterSpacing: "0.1em" }}>UNKNOWN</p>
         </div>
 
         <div style={{ marginBottom: 24, textAlign: "center" }}>
@@ -223,7 +248,6 @@ function PlayContent() {
           </p>
         </div>
 
-        {/* Add players manually */}
         {!showAddForm ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <button
@@ -263,7 +287,6 @@ function PlayContent() {
             <p style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: "#555" }}>
               Add Players
             </p>
-
             {rows.map((row, i) => (
               <div key={i} style={{ display: "flex", gap: 8 }}>
                 <input
@@ -288,7 +311,6 @@ function PlayContent() {
                 />
               </div>
             ))}
-
             <button
               onClick={() => setRows([...rows, { name: "", identity: "" }])}
               style={{
@@ -303,13 +325,11 @@ function PlayContent() {
               </svg>
               Add another
             </button>
-
             <div style={{ display: "flex", gap: 8 }}>
               <button
                 onClick={() => { setShowAddForm(false); setRows([{ name: "", identity: "" }]); }}
                 style={{
-                  flex: 1, padding: "11px",
-                  background: "transparent", color: "#444",
+                  flex: 1, padding: "11px", background: "transparent", color: "#444",
                   border: "1px solid #2A2730", borderRadius: 10,
                   fontSize: 12, fontFamily: "'Outfit', sans-serif", cursor: "pointer"
                 }}
@@ -319,8 +339,7 @@ function PlayContent() {
               <button
                 onClick={submitManualPlayers}
                 style={{
-                  flex: 2, padding: "11px",
-                  background: "#F5F0E8", color: "#13111A",
+                  flex: 2, padding: "11px", background: "#F5F0E8", color: "#13111A",
                   border: "none", borderRadius: 10,
                   fontSize: 12, fontWeight: 500, fontFamily: "'Outfit', sans-serif", cursor: "pointer"
                 }}
