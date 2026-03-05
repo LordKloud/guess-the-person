@@ -90,7 +90,7 @@ export default function Home() {
         <div style={{ textAlign: "center", marginBottom: 48 }}>
           <p style={{ fontSize: 64, marginBottom: 12 }}>&#127917;</p>
           <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 48, fontWeight: 600, color: "var(--ink)", marginBottom: 8 }}>
-            Guess The Person
+            Mystery Me!?
           </h1>
           <p style={{ fontSize: 13, color: "var(--muted)", fontStyle: "italic" }}>
             A game of secret identities
